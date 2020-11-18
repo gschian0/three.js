@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<link type="text/css" rel="stylesheet" href="main.css">
+	</head>
+	<body>
+
+		<div id="container"></div>
+		<div id="info">
+		
+		</div>
+
+		<script type="module">
+
+            import * as THREE from '../build/three.module.js';
+            import { OrbitControls } from './jsm/controls/OrbitControls.js';
+            
+            var scene, camera, renderer,clock;
+            let controls;
+
+init();
+
+function init(){
+  clock = new THREE.Clock();
+  scene = new THREE.Scene();
+  scene.background = new THREE.Color(0);
+  
+  let light = new THREE.HemisphereLight( 0xffffbb, 0x080820, 1 );
+    scene.add( light );
+    var directionalLight = new THREE.DirectionalLight( 0xffffff, 1 );
+scene.add( directionalLight );
+  
+camera = new THREE.PerspectiveCamera( 10, window.innerWidth / window.innerHeight, 1, 10000 );
+                camera.position.y = 200;
+                camera.position.z = 1;
+  camera.position.z = 50;
+  camera.position.y = 10;
+  camera.lookat = (0,0,0);
+  //camera.up.set( 0, 0, 1 );
+  renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.setSize( window.innerWidth, window.innerHeight );
+  document.body.appendChild( renderer.domElement );
+  window.addEventListener( 'resize', resize, false);
+  controls = new OrbitControls( camera, renderer.domElement );
+  var circle = new makeCircle(20);
+  scene.add(circle);
+  let group = new THREE.Group();
+  scene.add(group);
+
+  
+  var plane = makePlane(20);
+  plane.name = 'plane1';
+  plane.rotation.x = Math.PI/2;
+  plane.position.y = - 1;
+  plane.position.x =-0.5;
+  scene.add(plane);
+				//controls.maxPolarAngle = Math.PI * 0.495;
+				//controls.target.set( 0, 0, -5 );
+  // add sahpes
+
+function makeCircle(){
+    var geometry = new THREE.CircleGeometry( 5, 32 );
+var material = new THREE.MeshBasicMaterial( { color: 0xffff00, side: THREE.DoubleSide} );
+var circle = new THREE.Mesh( geometry, material );
+return circle;
+}
+class makeGrid{
+    constructor(){
+  const geometry = new THREE.BoxBufferGeometry(0.5,0.5,0.5);
+geometry.verticesNeedUpdate = true;
+geometry.elementsNeedUpdate = true;
+geometry.morphTargetsNeedUpdate = true;
+geometry.uvsNeedUpdate = true;
+geometry.normalsNeedUpdate = true;
+geometry.colorsNeedUpdate = true;
+geometry.tangentsNeedUpdate = true;
+  const material = new THREE.MeshLambertMaterial();
+  const block = new THREE.Mesh(geometry, material);
+  const maxBlocks = 20;
+  let mesh = [];
+  for(let x=-maxBlocks/2; x<maxBlocks/2; x+=1){
+    for(let y=-maxBlocks/2; y<maxBlocks/2; y+=1){
+      for(let z=-maxBlocks/2; z<maxBlocks/2; z+=1){
+        mesh[x] = block.clone();
+        mesh[x].position.set(x,Math.sin(x),z);
+        mesh.push(mesh[x]);
+        scene.add(mesh[x]);
+            }
+        }
+     }
+    }
+}
+  
+
+  function makePlane(size){
+  var geometry = new THREE.PlaneGeometry(size,size);
+  var material = new THREE.MeshBasicMaterial({
+      color: 0x00ff00,
+      side: THREE.DoubleSide
+  });
+  var mesh = new THREE.Mesh(
+      geometry,
+      material
+  );
+  return mesh;
+}
+
+  // end shapes
+  
+				
+				
+    // controls.update();
+  let griddy = new makeGrid();
+  scene.add(griddy);
+  
+  update();
+}
+
+function update(){
+    requestAnimationFrame( update );
+    renderer.render( scene, camera );
+
+
+    // var plane = scene.getObjectByName('plane1');
+    // plane.rotation.x += 0.01
+    // plane.rotation.z += 0.01
+
+
+
+    // scene.traverse(function(child){
+    //     child.scale.x += 0.1
+    //     child.scale.y -= 0.1
+    //     if (child.scale.x > 5){
+    //         child.scale.x *= -0.1;
+    //         child.scale.y *= -0.1;
+    //     }
+    // })
+}
+
+function resize(){
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize( window.innerWidth, window.innerHeight );
+
+
+}
+
+		</script>
+	</body>
+</html>

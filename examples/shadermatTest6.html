@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+    <title>Post-processing with AR.js and Three.js</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r110/three.min.js"></script>
+    <script src="https://unpkg.com/three@0.110.0/examples/js/postprocessing/EffectComposer.js"></script>
+    <!-- <script src="https://unpkg.com/three@0.110.0/examples/js/postprocessing/ShaderPass.js"></script> -->
+    <!-- <script src="https://unpkg.com/three@0.110.0/examples/js/postprocessing/RenderPass.js"></script> -->
+    <script src="https://unpkg.com/three@0.110.0/examples/js/postprocessing/GlitchPass.js"></script>
+    <script src="https://unpkg.com/three@0.110.0/examples/js/postprocessing/HalftonePass.js"></script>
+    <!-- <script src="https://unpkg.com/three@0.110.0/examples/js/shaders/CopyShader.js"></script> -->
+    <script src="https://unpkg.com/three@0.110.0/examples/js/shaders/DigitalGlitch.js"></script>
+    <script src="https://unpkg.com/three@0.110.0/examples/js/shaders/HalftoneShader.js"></script>
+    <script src="https://raw.githack.com/AR-js-org/AR.js/3.1.0/three.js/build/ar.js"></script>
+    
+   
+  </head>
+  <body style='margin: 0px; overflow: hidden;'>
+    <script type="module">
+
+
+// import * as THREE from '../build/three.module.js';
+
+import Stats from './jsm/libs/stats.module.js';
+
+import { Curves } from './jsm/curves/CurveExtras.js';
+import { ParametricGeometries } from './jsm/geometries/ParametricGeometries.js';
+import { EffectComposer } from './jsm/postprocessing/EffectComposer.js';
+import { RenderPass } from './jsm/postprocessing/RenderPass.js';
+import { GlitchPass } from './jsm/postprocessing/GlitchPass.js';
+import { UnrealBloomPass } from './jsm/postprocessing/UnrealBloomPass.js';
+import { ShaderPass } from './jsm/postprocessing/ShaderPass.js';
+// import { HalfToneShader } from './jsm/shaders/HalftoneShader.js';
+import { CopyShader } from './jsm/shaders/CopyShader.js';
+// import { DigitalGlitch} from './jsm/shaders/CopyShader.js';
+// import {THREEx} from '/node_modules/ar.js-modular/three.js/build/ar.js';
+
+
+        let uniforms;
+        let cameraPlane;
+        let matty;
+        let matty2;
+        let planeGeo;
+        let videoTexture;
+      const renderer = new THREE.WebGLRenderer({
+        antialias: true,
+        alpha: true
+      });
+      renderer.setClearColor(new THREE.Color(), 0);
+      renderer.setSize(window.innerHeight, window.innerWidth);
+      renderer.domElement.style.position = 'absolute';
+      renderer.domElement.style.top = '0px';
+      renderer.domElement.style.left = '0px';
+      document.body.appendChild(renderer.domElement);
+      
+      const scene = new THREE.Scene();
+      const camera = new THREE.Camera();
+      scene.add(camera);
+
+      const arToolkitSource = new THREEx.ArToolkitSource({
+        sourceType: 'webcam'
+      });
+
+      
+      arToolkitSource.init(() => {
+        setTimeout(() => {
+          onResize();
+        }, 2000);
+
+        const video = document.querySelector('video');
+        videoTexture = new THREE.VideoTexture(video);
+        videoTexture.minFilter = THREE.LinearFilter;
+        videoTexture.magFilter = THREE.LinearFilter;
+        videoTexture.format = THREE.RGBFormat;
+        //videoTexture.wrapS = THREE.MirroredRepeatWrapping;
+        //videoTexture.wrapT = THREE.MirroredRepeatWrapping;
+        
+        planeGeo = new THREE.PlaneBufferGeometry(2, 2);
+        matty = new THREE.RawShaderMaterial({
+            uniforms: {
+              videoTexture: {value: videoTexture},
+              videoScale: {value: 1.0},
+              u_time: { value: 2.0 }
+            },
+            vertexShader: `
+              precision highp float;
+
+              attribute vec3 position;
+              attribute vec2 uv;
+
+              varying vec2 v_uv;
+
+              uniform float videoScale;
+
+              void main() {
+                v_uv = uv;
+                gl_Position = vec4(position.x * videoScale, position.y, position.z, 1.0);
+              }
+            `,
+            fragmentShader: `
+              precision highp float;
+              uniform float u_time;
+              varying vec2 v_uv;
+              #define PI 3.1418
+
+              uniform sampler2D videoTexture;
+
+              void main() {
+                  vec2 coords = v_uv+vec2(1.,-0.3);
+                  coords.x *= .3*sin(2.0*coords.y+u_time - (1.0*cos(coords.x*1.0)*0.3+0.5))*0.5 +0.5;
+                  coords.y +=.3*sin(.5*coords.x+u_time)*0.5 + 0.5;
+                gl_FragColor = vec4(texture2D(videoTexture, vec2(coords-vec2(0.5,0.5))).rgb, 1.0);
+              }
+            `,
+
+              
+
+
+            depthTest: false,
+            depthWrite: false,
+          });
+        cameraPlane = new THREE.Mesh(
+          planeGeo,matty );
+        cameraPlane.renderOrder = -1;
+        cameraPlane.frustumCulled = false;
+        scene.add(cameraPlane);
+      });
+
+      addEventListener('resize', () => {
+        onResize();
+      });
+
+      function onResize() {
+        arToolkitSource.onResizeElement();
+        arToolkitSource.copyElementSizeTo(renderer.domElement);
+        if (arToolkitContext.arController !== null) {
+          arToolkitSource.copyElementSizeTo(arToolkitContext.arController.canvas);
+        }
+        const video = document.querySelector('video');
+        if (video !== null) {
+          matty.uniforms.videoScale.value = (video.videoWidth / video.videoHeight) / 1.33333;
+        }
+      };
+
+      const arToolkitContext = new THREEx.ArToolkitContext({
+        cameraParametersUrl: 'data/camera_para.dat',
+        detectionMode: 'mono'
+      });
+
+      arToolkitContext.init(() => {
+        camera.projectionMatrix.copy(arToolkitContext.getProjectionMatrix());
+      });
+
+      const marker = new THREE.Group();
+      scene.add(marker);
+
+      const arMarkerControls = new THREEx.ArMarkerControls(arToolkitContext, marker, {
+        type: 'pattern',
+        patternUrl: 'data/patt.hiro',
+        changeMatrixMode: 'modelViewMatrix'
+      });
+
+      const cube = new THREE.Mesh(
+        new THREE.CubeGeometry(1, 1, 1),
+        new THREE.MeshNormalMaterial(),
+      );
+      cube.position.y = 1.0;
+      marker.add(cube);
+
+      const composer = new EffectComposer(renderer);
+      const renderpass = new RenderPass(scene, camera);
+      composer.addPass(renderpass);
+      composer.addPass(new THREE.GlitchPass());
+      composer.addPass(new THREE.HalftonePass());
+      
+
+      matty2 = new THREE.ShaderMaterial({
+            uniforms: {
+              videoTexture: {value: videoTexture},
+              videoScale: {value: 1.0},
+              u_time: { value: 2.0 }
+            },
+            vertexShader: `
+              precision highp float;
+
+              attribute vec3 position;
+              attribute vec2 uv;
+
+              varying vec2 v_uv;
+
+              //uniform float videoScale;
+
+              void main() {
+                v_uv = uv;
+                gl_Position = vec4(position.x , position.y, position.z, 1.0);
+              }
+            `,
+            fragmentShader: `
+              precision highp float;
+              uniform float u_time;
+              varying vec2 v_uv;
+              #define PI 3.1418
+
+              //uniform sampler2D videoTexture;
+
+              void main() {
+                  vec2 coords = v_uv;
+                  //coords.x *= 2.0*sin(20.0*coords.y+u_time)*0.5 + 0.5;
+                  coords.y += sin(50.0*coords.x+u_time)*0.5 + 0.5;
+                //gl_FragColor = vec4(texture2D(videoTexture, vec2(coords)).rgb, 1.0);
+                gl_FragColor = vec4(1.0,1.0,1.0,1.0);
+              }
+            `,
+            depthTest: false,
+            depthWrite: false,
+          });
+      
+      
+      
+      
+      
+      //const newShade = new ShaderPass(matty2);
+      //composer.addPass(newShade);
+      const clock = new THREE.Clock();
+      requestAnimationFrame(function animate(){
+        requestAnimationFrame(animate);
+        
+        if (arToolkitSource.ready) {
+          arToolkitContext.update(arToolkitSource.domElement);
+          matty.uniforms.u_time.value = clock.getElapsedTime();
+        }
+        const delta = clock.getDelta();
+        //matty.uniforms.u_time.value = clock.getElapsedTime();
+        
+
+        cube.rotation.x += delta * 1.0;
+        cube.rotation.y += delta * 1.5; 
+        composer.render();
+      });
+    </script>
+  </body>
+</html>

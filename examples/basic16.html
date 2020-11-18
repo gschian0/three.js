@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<link type="text/css" rel="stylesheet" href="main.css">
+	</head>
+	<body>
+
+		<div id="container"></div>
+		<div id="info">
+		
+        </div>
+        
+    </body>
+
+	<script type="module">
+
+import * as THREE from '../build/three.module.js';
+import { OrbitControls } from './jsm/controls/OrbitControls.js';
+            
+
+            
+let scene, camera, renderer,clock;
+let controls;
+
+let group = new THREE.Group();
+let newbie=[];
+let size = 0.5;
+let separation = 1;
+group.name = 'groupy';
+let resolution = 100;
+let step = 2 / resolution;
+let points = [];
+
+
+init();
+update();
+//init
+function init(){
+    //setup
+    clock = new THREE.Clock();
+    scene = new THREE.Scene();
+    scene.background = new THREE.Color(0);
+    let group = new THREE.Group();
+    //light
+    let light = new THREE.HemisphereLight( 0xffffbb, 0x080820, 1 );
+    scene.add( light );
+    var directionalLight = new THREE.DirectionalLight( 0xffffff, 1 );
+    scene.add( directionalLight );
+
+    //camera
+    camera = new THREE.PerspectiveCamera( 10, window.innerWidth / window.innerHeight, 1, 10000 );
+    camera.position.y = 200;
+    camera.position.z = 1;
+    camera.position.z = 150;
+    camera.position.y = 10;
+    camera.lookat = (0,0,0);
+    
+    //renderer
+    renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize( window.innerWidth, window.innerHeight );
+    document.body.appendChild( renderer.domElement );
+    window.addEventListener( 'resize', resize, false);
+    controls = new OrbitControls( camera, renderer.domElement );
+    
+    // group and center
+    var center = new THREE.Vector3();
+    var bbox = new THREE.Box3().setFromObject(group).getCenter(center);
+    group.translateX(-center.x);
+    scene.add(group);
+    
+   
+
+
+    
+    
+    // for (let i = 0; i <= resolution*resolution-1; i++) {
+    //     points.push(new THREE.Vector3());
+    
+    // }
+    //let oneVec = new THREE.Vector3(1,1,1);
+    let scale = step * 1;
+    let testGeo = new THREE.BoxBufferGeometry(1,1,1,1);
+    let testMat = new THREE.MeshNormalMaterial();
+
+    for(let i = 0; i< points.length; i++){
+    
+                newbie[i] = new THREE.Mesh(testGeo,testMat);
+                // points[i].position.x = points[i].x;
+                // points[i].position.y = points[i].y;
+                // points[i].position.z = points[i].z;
+                newbie[i].scale.x = scale;
+                newbie[i].scale.y = scale;
+                newbie[i].scale.z = scale;
+                newbie.push(newbie[i]);
+                group.add(newbie[i]);
+                
+               // console.log(points);
+                // scene.add(points[i]);
+    
+    }
+    
+
+    
+
+} 
+
+//updates and resize
+function update(group){
+    requestAnimationFrame( update );
+    renderer.render( scene, camera );
+    controls.update();
+    let time = clock.getElapsedTime();
+    let v = 0.5 * step - 1;
+    for (let i = 0, x = 0,z =0; i < points.length; i++, x++){
+        if (x == resolution) {
+            x = 0;
+            z += 1;
+            v = (z + 0.5) * step - 1;
+        }
+        let u = (x + 0.5) * step - 1;
+        // let v = (z + 0.5) * step - 1;
+        newbie[i].position.copy = Circle(u,v,time);
+        // console.log(points[i].position);
+    }
+    // points.forEach((box, ndx) => {
+    // for (let ndx = 0, x = 0, z = 0; ndx < newbie.length; ndx++, x++){
+    //     if(x === resolution){
+    //         x = 0;
+    //         z += 1;
+    //     }
+    //     let u = (x + 0.5) * step - 1;
+    //     let v = (z + 0.5) * step -1;
+
+    
+    //  points[ndx].position.copy = Circle(u,v,time); 
+    
+    }
+    
+  
+// }
+
+function Circle(u, v,time){
+    let p = new THREE.Vector3;
+    p.x = Math.sin(Math.PI * u);
+    p.y = 10;
+    p.z = Math.cos(Math.PI * u);
+    return p;
+}
+
+// function sinWave(amp,freq,ndx, time){
+//     let yN = amp*Math.sin(freq*ndx+time);
+//     return yN;
+// }
+
+// function Wave(x,z, time){
+//     return Math.sin(Math.PI * (x + z + time));
+// }
+
+// function multiWave(x,z,time){
+//     let yN = Math.sin(Math.PI * (x + 0.5 * time));
+//     yN += 0.5 * Math.sin(2 * Math.PI * (z+ time));
+//     return yN * (2/3);
+// }
+
+// function tripleWave(x,z,time){
+//     let yN = Math.sin(Math.PI * (x + 0.5 * time));
+//     yN += 0.5 * Math.sin(2 * Math.PI * (z+ time));
+//     yN += Math.sin(Math.PI * (x + z + 0.25 * time));
+//     return yN * (2/3);
+// }
+
+// function ripple(x,z,time){
+//     let d = Math.sqrt((x*x) + (z *z));
+//     let y = Math.sin(Math.PI*(4*d-time));
+//     return y/(1+10 *d);
+// }
+function resize(){
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize( window.innerWidth, window.innerHeight );
+    
+
+}
+
+
+
+		</script>
+
+</html>

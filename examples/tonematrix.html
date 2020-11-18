@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<link type="text/css" rel="stylesheet" href="main.css">
+	</head>
+	<body>
+        <body>
+            <div id="overlay">
+              <button id="startButton">Enter The Tone Matrix</button>
+            </div>
+
+		<div id="webGL"></div>
+		<div id="info">
+		
+		</div>
+
+        <script src='/build/three.js'></script>
+        <!-- <script src='/libs/threex.domevents.js'></script> -->
+      <script src='https://s3-us-west-2.amazonaws.com/s.cdpn.io/2666677/CurveExtras.js'></script>
+      <script src='https://s3-us-west-2.amazonaws.com/s.cdpn.io/2666677/OrbitControls.js'></script>
+      <script src='/examples/js/controls/FirstPersonControls.js'></script>
+      <script src='https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.7.6/dat.gui.min.js'></script>
+
+		<script type="module">
+class StarShape extends THREE.Shape{
+  constructor(sides, innerRadius, outerRadius){
+    super();
+    let theta = 0;
+    const inc = ((2 * Math.PI) / sides) * 0.5;
+  
+    this.moveTo(Math.cos(theta)*outerRadius, Math.sin(theta)*outerRadius);
+  
+    for(let i=0; i<sides; i++){
+      theta += inc;
+      this.lineTo(Math.cos(theta)*innerRadius, Math.sin(theta)*innerRadius);
+      theta += inc;
+      this.lineTo(Math.cos(theta)*outerRadius, Math.sin(theta)*outerRadius);
+    }
+  }  
+}
+
+var scene, camera, renderer, mesh, group, clock, controls;
+var listener = new THREE.AudioListener();
+var oscillator = [];
+const startButton = document.getElementById( 'startButton' );
+			startButton.addEventListener( 'click', function () {
+
+				init();
+        update();
+        // listener.context.start();
+
+			}, false );
+let heart = [];
+let sound = [];	
+// init();
+
+function init(){
+    const overlay = document.getElementById( 'overlay' );
+	overlay.remove();
+ // context = new AudioContext;
+
+  scene = new THREE.Scene();
+  scene.background = new THREE.Color(0xff0000);
+ 
+  
+  clock = new THREE.Clock();
+  
+  camera = new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 0.1, 1000 );
+  camera.position.set(0, 0, 10);
+  camera.add( listener );
+  
+  const ambient = new THREE.HemisphereLight(0xffffbb, 0x080820);
+  scene.add(ambient);
+  
+  const light = new THREE.DirectionalLight(0xFFFFFF, 1);
+  light.position.set( 1, 10, 6);
+  scene.add(light);
+  
+  renderer = new THREE.WebGLRenderer({antialias: true});
+  
+ 
+  renderer.setSize( window.innerWidth, window.innerHeight );
+  document.body.appendChild( renderer.domElement );
+
+  const controls = new THREE.OrbitControls(camera, renderer.domElement);
+  controls.target.set(0, 0, 0);
+controls.enableDamping = true;
+ controls.dampingFactor = 0.1;
+        controls.rotateSpeed = 0.04;
+// controls = new THREE.FirstPersonControls( camera, renderer.domElement );
+
+// controls.movementSpeed = 70;
+// controls.lookSpeed = 0.05;
+// controls.noFly = true;
+// controls.lookVertical = false;
+  
+
+ 
+ 
+
+//   var mouse	= {x : 0, y : 0}
+// 	document.addEventListener('click', function(event){
+// 		context.resume();
+// 	}, true)
+  
+  
+  window.addEventListener( 'resize', resize, false);
+
+  
+  // onclick(camera,renderer,listener);
+  createMesh();
+
+  
+  
+  // update();
+}
+
+function createMesh(){
+  const extrudeSettings = {
+    depth: 6,
+    bevelEnabled: false
+  };
+//   const shape = new StarShape(5, 5, 12);
+  const heartGeometry = new THREE.SphereBufferGeometry( 20,20,20 );
+  group = new THREE.Group();
+  scene.add(group);
+  const geometry = new THREE.CircleBufferGeometry( 200, 12,12 );
+  
+  const mat = new THREE.MeshBasicMaterial({wireframe:true});
+  mesh = new THREE.Mesh(geometry, mat);
+  //scene.add(mesh);
+  const position = geometry.getAttribute('position');
+  const normal = geometry.getAttribute('normal');
+  
+  
+  for(let i=0; i<position.array.length; i+=3){
+    const color = new THREE.Color().setHSL(i/position.count, 1.0, 0.7);
+    const material = new THREE.MeshStandardMaterial({ color: color });
+    heart[i] = new THREE.Mesh(heartGeometry, material);
+    const pos = new THREE.Vector3(position.array[i], position.array[i+1], position.array[i+2]);
+    const norm = new THREE.Vector3(normal.array[i], normal.array[i+1], normal.array[i+2]);
+    heart[i].position.copy(pos);
+    const target = pos.clone().add(norm.multiplyScalar(position.array.length-1));
+    heart[i].lookAt(target);
+   if (i === 0){
+
+   }else{
+    
+     sound[i] = new THREE.PositionalAudio( listener );
+				oscillator[i] = listener.context.createOscillator();
+				oscillator[i].type = 'sine';
+				oscillator[i].frequency.value = 100+i/10;
+        oscillator[i].start(0);
+        //oscillator.push(oscillator[i]);
+        sound[i].setVolume(0.5);
+                sound[i].setNodeSource(oscillator[i]);
+				sound[i].setRefDistance( 20 );
+				
+        heart[i].add(sound[i]);
+        group.add(heart[i]);
+   }
+   group.rotation.x = -Math.PI/2;
+  }
+}
+function onclick(camera, renderer){
+    let clicker = new THREE.BoxGeometry(20,20,20);
+ 
+  function hsl(h, s, l) {
+    return (new THREE.Color()).setHSL(h, s, l);
+  }
+  color = hsl(1,.8,.5);
+  const Cmaterial = new THREE.MeshPhongMaterial({
+    color,
+    opacity: 0.4,
+    transparent: true,
+  });
+  let meshClick = new THREE.Mesh(clicker,Cmaterial);
+  scene.add(meshClick);
+    var domEvents	= new THREEx.DomEvents(camera, renderer.domElement);
+     domEvents.addEventListener(meshClick, 'click', function(event){
+    console.log('you clicked on mesh', mesh)
+    heart.sound.oscillator[5].start();
+}, false)
+}
+
+
+function updateMesh(){
+  const time = clock.getElapsedTime();
+  const geometry = mesh.geometry;
+  const position = geometry.getAttribute('position');
+  const normal = geometry.getAttribute('normal');
+  const radius = 40 + Math.sin(time) * 20;
+  //console.log(radius);
+  for(let i=0; i<position.array.length-1; i+=3){
+    const norm = new THREE.Vector3(normal.array[i], normal.array[i+1], normal.array[i+2]);
+    const pos = norm.multiplyScalar(radius);
+    position.array[i] = pos.x;
+    position.array[i+1] = pos.y;
+    position.array[i+2] = pos.z;
+  }
+  position.needsUpdate = true;
+
+//   const delta = clock.getDelta();
+
+// 				controls.update( delta );
+
+				// material1.emissive.b = analyser1.getAverageFrequency() / 256;
+				// material2.emissive.b = analyser2.getAverageFrequency() / 256;
+				// material3.emissive.b = analyser3.getAverageFrequency() / 256;
+}
+
+function update(){
+  requestAnimationFrame( update );
+  updateMesh();
+  
+	renderer.render( scene, camera );  
+}
+
+function resize(){
+    controls.handleResize();
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize( window.innerWidth, window.innerHeight );
+}
+ 
+		</script>
+	</body>
+</html>

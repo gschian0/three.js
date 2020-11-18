@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+    <title>Post-processing with AR.js and Three.js</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r110/three.min.js"></script>
+    <script src="/examples/js/postprocessing/EffectComposer2.js"></script>
+    <script src="https://unpkg.com/three@0.110.0/examples/js/postprocessing/ShaderPass.js"></script>
+    <script src="https://unpkg.com/three@0.110.0/examples/js/postprocessing/RenderPass.js"></script>
+    <script src="https://unpkg.com/three@0.110.0/examples/js/postprocessing/GlitchPass.js"></script>
+    <script src="https://unpkg.com/three@0.110.0/examples/js/postprocessing/HalftonePass.js"></script>
+    <script src="https://unpkg.com/three@0.110.0/examples/js/shaders/CopyShader.js"></script>
+    <script src="https://unpkg.com/three@0.110.0/examples/js/shaders/DigitalGlitch.js"></script>
+    <script src="https://unpkg.com/three@0.110.0/examples/js/shaders/HalftoneShader.js"></script>
+    <script src="https://raw.githack.com/AR-js-org/AR.js/3.1.0/three.js/build/ar.js"></script>
+    <script src = " /examples/js/shaders/CopyShader3.js"></script>
+    <script src = " /examples/js/shaders/AfterimageShader.js"></script>
+    <script src = "/examples/js/postprocessing/AfterimagePass.js"></script>
+    <script src ="https://s3-us-west-2.amazonaws.com/s.cdpn.io/2666677/MyShaderChunks.js"></script>
+  </head>
+  <body style='margin: 0px; overflow: hidden;'>
+    <script>
+        const vshader = `
+//#include <common>
+//#include <lights_pars_begin>
+
+varying vec3 vPosition;
+//varying vec3 vLightIntensity;
+
+void main() {
+  //#include <simple_lambert_vertex>
+  //vLightIntensity = vLightFront + ambientLightColor + vLightBack;
+
+  vPosition = position;
+
+  gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
+}
+`
+const fshader = `
+uniform vec3 u_LightColor;
+uniform vec3 u_DarkColor;
+uniform float u_Frequency;
+uniform float u_NoiseScale;
+uniform float u_RingScale;
+uniform float u_Contrast;
+uniform float time;
+
+varying vec3 vPosition;
+//varying vec3 vLightIntensity;
+
+#include <noise>
+
+void main(){
+  float n = snoise( vPosition + time *.02  );
+  float ring = fract( u_Frequency * vPosition.z + u_NoiseScale * n );
+  ring *= u_Contrast * ( 1.0 - ring );
+  
+  // Adjust ring smoothness and shape, and add some noise
+  float lerp = pow( ring*2.0, u_RingScale+abs(sin(time*.1))) + n;
+  vec3 color = mix(u_DarkColor, u_LightColor, lerp);
+  gl_FragColor = vec4( color, 1.0);
+}
+`
+const vshader2 = `
+//#include <common>
+//#include <lights_pars_begin>
+//varying vec3 vLightIntensity;
+varying vec2 vUv;
+uniform float time;
+varying vec3 vNormal;
+varying vec3 vPosition;
+
+void main() {
+ // #include <simple_lambert_vertex>
+  vNormal = normal;
+  vUv = uv;
+ // vLightIntensity = vLightFront + ambientLightColor;
+  vPosition = position;
+  gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
+}
+`
+const fshader2 = `
+varying vec3 vNormal;
+varying vec2 vUv;
+uniform sampler2D image;
+uniform float time;
+//varying vec3 vLightIntensity;
+varying vec3 vPosition;
+
+
+
+
+void main(){
+  vec3 normal = vNormal;
+  normal = normalize(normal);
+
+  vec2 coords = vUv;
+  coords.x += 0.009*sin(30.0*coords.y+time*2.0);
+  coords.y += 0.009*sin(30.0*coords.x+time*2.0);
+  vec4 texture = texture2D(image,coords);
+  vec3 color = vec3(1.0,1.0,1.0);
+ // gl_FragColor = vec4(vLightIntensity*texture.rgb, 1.0);
+  gl_FragColor = vec4(texture.rgb, 1.0);
+}
+`
+
+
+
+        let uniforms;
+        let cameraPlane;
+        let matty;
+        let planeGeo;
+        let bambo;
+        let spasser;
+        let spasser2;
+        let scramble;
+        let group;
+      const renderer = new THREE.WebGLRenderer({
+        antialias: true,
+        alpha: true
+      });
+      renderer.setClearColor(new THREE.Color(), 0);
+      renderer.setSize(640, 480);
+      renderer.domElement.style.position = 'absolute';
+      renderer.domElement.style.top = '0px';
+      renderer.domElement.style.left = '0px';
+      document.body.appendChild(renderer.domElement);
+      
+      const scene = new THREE.Scene();
+      const camera = new THREE.Camera();
+      scene.add(camera);
+
+      const arToolkitSource = new THREEx.ArToolkitSource({
+        sourceType: 'webcam'
+      });
+
+      
+      arToolkitSource.init(() => {
+        setTimeout(() => {
+          onResize();
+        }, 100);
+        group = new THREE.Group();
+        const video = document.querySelector('video');
+        const videoTexture = new THREE.VideoTexture(video);
+        videoTexture.minFilter = THREE.LinearFilter;
+        videoTexture.magFilter = THREE.LinearFilter;
+        videoTexture.format = THREE.RGBFormat;
+        //videoTexture.wrapS = videoTexture.wrapT = THREE.RepeatWrapping;
+        videoTexture.repeat.set(10, 8);
+        
+        planeGeo = new THREE.PlaneBufferGeometry(2, 2);
+        matty = new THREE.ShaderMaterial({
+            uniforms: {
+              //tDifuse: {value : 0},
+              videoTexture: {value: videoTexture},
+              videoScale: {value: 1.0},
+             // map: THREE.UVMapping,
+              u_time: { value: 2.0 }
+            },
+            vertexShader: `
+              precision highp float;
+
+              //attribute vec3 position;
+              //attribute vec2 uv;
+
+              varying vec2 v_uv;
+
+              uniform float videoScale;
+
+              void main() {
+                v_uv = uv;
+                gl_Position = vec4(position.x * videoScale, position.y, position.z, 1.0);
+              }
+            `,
+            fragmentShader: `
+              precision highp float;
+              uniform float u_time;
+              varying vec2 v_uv;
+              #define PI 3.1418
+
+              uniform sampler2D videoTexture;
+
+              void main() {
+                  vec2 coords = v_uv;
+                  //coords.x *= 2.0*sin(20.0*coords.y+u_time)*0.5 + 0.5;
+                  //coords.y += 0.03*sin(50.0*coords.x+u_time)*0.5 + 0.5;
+                gl_FragColor = vec4(texture2D(videoTexture, vec2(coords)).rgb, 1.0);
+              }
+            `,
+            depthTest: false,
+            depthWrite: false,
+          });
+        cameraPlane = new THREE.Mesh(
+          planeGeo,matty );
+        cameraPlane.renderOrder = -1;
+        cameraPlane.frustumCulled = false;
+        scene.add(cameraPlane);
+      });
+
+      addEventListener('resize', () => {
+        onResize();
+      });
+
+      function onResize() {
+        arToolkitSource.onResizeElement();
+        arToolkitSource.copyElementSizeTo(renderer.domElement);
+        if (arToolkitContext.arController !== null) {
+          arToolkitSource.copyElementSizeTo(arToolkitContext.arController.canvas);
+        }
+        const video = document.querySelector('video');
+        if (video !== null) {
+          matty.uniforms.videoScale.value = (video.videoWidth / video.videoHeight) / 1.33333;
+        }
+      };
+
+      const arToolkitContext = new THREEx.ArToolkitContext({
+        cameraParametersUrl: 'data/camera_para.dat',
+        detectionMode: 'mono'
+      });
+
+      arToolkitContext.init(() => {
+        camera.projectionMatrix.copy(arToolkitContext.getProjectionMatrix());
+      });
+
+      const marker = new THREE.Group();
+      scene.add(marker);
+
+      const arMarkerControls = new THREEx.ArMarkerControls(arToolkitContext, marker, {
+        type: 'pattern',
+        patternUrl: 'data/patt.hiro',
+        changeMatrixMode: 'modelViewMatrix'
+      });
+
+    //   const cube = new THREE.Mesh(
+    //     new THREE.CubeGeometry(1, 1, 1),
+    //     new THREE.MeshNormalMaterial(),
+    //   );
+    //   cube.position.y = 1.0;
+    //   cube.add(group);
+
+    const uniformsT = THREE.UniformsUtils.merge( [
+  THREE.UniformsLib[ "common" ],
+  THREE.UniformsLib[ "lights" ]
+]);
+uniformsT.u_LightColor = { value: new THREE.Color(0xbb905d) };
+uniformsT.u_DarkColor = { value: new THREE.Color(0x7d490b) };
+uniformsT.u_Frequency = { value: 2.0 };
+uniformsT.u_NoiseScale = { value: 10.0 };
+uniformsT.u_RingScale = { value: 0.3 };
+uniformsT.u_Contrast = { value: 4.0 };
+uniformsT.time = {value: 0};
+
+const material = new THREE.ShaderMaterial( {
+  lights: true,
+  uniforms: uniformsT,
+  vertexShader: vshader,
+  fragmentShader: fshader,
+  side : THREE.DoubleSide,
+} );
+material.extensions.derivatives = true;
+
+
+const geometry1 = new THREE.PlaneGeometry( 2.75, 1.75 );
+const geometry2 = new THREE.BoxGeometry( 3, 2, 0.1 );		
+
+const texture = new THREE.TextureLoader().load("XRLOGO.png");
+
+
+const myUniforms = THREE.UniformsUtils.merge( [
+  THREE.UniformsLib[ "common" ],
+  THREE.UniformsLib[ "lights" ]]);
+  myUniforms.image = { type: "t", value: texture };
+  myUniforms.time = {value: 0};
+
+const material2 = new THREE.ShaderMaterial( {
+  lights: true,
+  uniforms: myUniforms,
+  side : THREE.DoubleSide,
+  vertexShader: vshader2,
+  fragmentShader: fshader2
+} );
+material.extensions.derivatives = true;
+
+
+const plane = new THREE.Mesh( geometry1, material2 );
+plane.position.z = 0.18;
+plane.position.y = 1;
+//scene.add( plane );
+
+
+const material3 = new THREE.MeshNormalMaterial({side: THREE.DoubleSide});
+const plane2 = new THREE.Mesh( geometry1, material2 );
+plane2.position.z = -0.1;
+plane2.position.y = 1;
+plane2.rotation.x = Math.PI;
+plane2.rotation.z = Math.PI;
+//scene.add( plane2 );
+
+const cube = new THREE.Mesh( geometry2, material );
+cube.position.x = 0;
+cube.position.y= 1;
+//scene.add( cube );
+
+camera.position.z = 3;
+
+
+
+
+
+
+
+
+      marker.add(plane,plane2,cube);
+
+      const composer = new THREE.EffectComposer(renderer);
+      const renderpass = new THREE.RenderPass(scene, camera);
+      composer.addPass(renderpass);
+      //composer.addPass(new THREE.GlitchPass());
+      //composer.addPass(new THREE.HalftonePass());
+      scramble = new THREE.ShaderMaterial(THREE.CopyShader2);
+      const uniforms2 = THREE.UniformsUtils.clone( scramble.uniforms );
+      
+      //spasser = new THREE.ShaderPass( scramble );
+      //spasser.uniforms.buster.value = 0;
+      
+      //composer.addPass(spasser);
+
+      
+      //composer.addPass(new THREE.AfterimagePass());
+
+      const clock = new THREE.Clock();
+      requestAnimationFrame(function animate(){
+        requestAnimationFrame(animate);
+        
+        if (arToolkitSource.ready) {
+          arToolkitContext.update(arToolkitSource.domElement);
+          matty.uniforms.u_time.value = clock.getElapsedTime();
+          //scramble.uniforms.u_time.value = clock.getElapsedTime();
+         // spasser.uniforms.buster.value = clock.getElapsedTime();
+          
+        }
+        const delta = clock.getDelta();
+        //matty.uniforms.u_time.value = clock.getElapsedTime();
+        //scramble.uniforms.u_time = clock.getElapsedTime();
+
+        //cube.rotation.x += delta * 1.0;
+        //cube.rotation.y += delta * 1.5; 
+        composer.render();
+      });
+    </script>
+  </body>
+</html>

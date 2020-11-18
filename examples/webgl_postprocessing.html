@@ -21,12 +21,14 @@
 
 			let camera, renderer, composer;
 			let object;
+			let clock;
+			let effect2;
 
 			init();
 			animate();
 
 			function init() {
-
+				clock = new THREE.Clock();
 				renderer = new THREE.WebGLRenderer();
 				renderer.setPixelRatio( window.devicePixelRatio );
 				renderer.setSize( window.innerWidth, window.innerHeight );
@@ -72,8 +74,8 @@
 				effect1.uniforms[ 'scale' ].value = 4;
 				composer.addPass( effect1 );
 
-				const effect2 = new ShaderPass( RGBShiftShader );
-				effect2.uniforms[ 'amount' ].value = 0.0015;
+				effect2 = new ShaderPass( RGBShiftShader );
+				effect2.uniforms[ 'amount' ].value = 0.15;
 				composer.addPass( effect2 );
 
 				//
@@ -95,10 +97,10 @@
 			function animate() {
 
 				requestAnimationFrame( animate );
-
+				let timer = clock.getElapsedTime();
 				object.rotation.x += 0.005;
 				object.rotation.y += 0.01;
-
+				effect2.uniforms[ 'amount' ].value = 0.02*Math.sin(20.0*timer);
 				composer.render();
 
 			}

@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<link type="text/css" rel="stylesheet" href="main.css">
+	</head>
+	<body>
+
+		<div id="container"></div>
+		<div id="info">
+		
+        </div>
+        
+    </body>
+
+	<script type="module">
+
+import * as THREE from '../build/three.module.js';
+import { OrbitControls } from './jsm/controls/OrbitControls.js';
+            
+
+            
+let scene, camera, renderer,clock;
+let controls;
+
+let xboxes = 100;
+let group = new THREE.Group();
+let newbie=[];
+let size = 0.5;
+let separation = 1;
+group.name = 'groupy';
+let resolution = 70;
+
+init();
+update();
+//init
+function init(){
+  clock = new THREE.Clock();
+  scene = new THREE.Scene();
+  scene.background = new THREE.Color(0);
+  let group = new THREE.Group();
+  
+    let light = new THREE.HemisphereLight( 0xffffbb, 0x080820, 1 );
+    scene.add( light );
+    var directionalLight = new THREE.DirectionalLight( 0xffffff, 1 );
+    scene.add( directionalLight );
+
+    camera = new THREE.PerspectiveCamera( 10, window.innerWidth / window.innerHeight, 1, 10000 );
+    camera.position.y = 200;
+    camera.position.z = 1;
+    camera.position.z = 150;
+    camera.position.y = 10;
+    camera.lookat = (0,0,0);
+    renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize( window.innerWidth, window.innerHeight );
+    document.body.appendChild( renderer.domElement );
+    window.addEventListener( 'resize', resize, false);
+    controls = new OrbitControls( camera, renderer.domElement );
+    
+    scene.add(group);
+    
+   
+
+
+    let points = [];
+    let rad = 0;
+    let separation = 10;
+    let step = 2 / resolution;
+    for (let i = 0, x = 0, z = 0; i <= resolution*resolution; i++, x++) {
+        if(x === resolution){
+            x = 0;
+            z += 1;
+        }
+        points.push(new THREE.Vector3((x+0.5)*step -1,2,(z+0.5)*step-1));
+    
+    }
+    //let oneVec = new THREE.Vector3(1,1,1);
+    let scale = step * 1;
+    let testGeo = new THREE.BoxBufferGeometry(1,1,1,1);
+    let testMat = new THREE.MeshNormalMaterial();
+
+    for(let i = 0; i< points.length; i++){
+    
+                newbie[i] = new THREE.Mesh(testGeo,testMat);
+                newbie[i].position.x = points[i].x;
+                newbie[i].position.y = points[i].y;
+                newbie[i].position.z = points[i].z;
+                newbie[i].scale.x = scale;
+                newbie[i].scale.y = scale;
+                newbie[i].scale.z = scale;
+                group.add(newbie[i]);
+                //scene.add(newbie[i]);
+    
+    }
+    
+    var center = new THREE.Vector3();
+    var bbox = new THREE.Box3().setFromObject(group).getCenter(center);
+    group.translateX(-center.x);
+    
+
+} 
+
+//updates and resize
+function update(group){
+    requestAnimationFrame( update );
+    renderer.render( scene, camera );
+    controls.update();
+    let time = clock.getElapsedTime();
+ 
+    newbie.forEach((box, ndx) => {
+      const speed =  ndx * .01;
+      let mult = -ndx/2 ;
+
+     
+     
+      
+      newbie[ndx].position.y = sinWave(.5,.25,ndx,time);
+      newbie[ndx].position.y += sinWave(.5,.01,ndx,time);
+      newbie[ndx].position.z = sinWave(1,.01,ndx,time);
+    //newbie[ndx].position.y = Math.sin(.25*ndx+time);
+      //newbie[ndx].position.z = 4*Math.sin(ndx+time);
+      
+    });
+  
+}
+
+function sinWave(amp,freq,ndx, time){
+    let yN = amp*Math.sin(freq*ndx+time);
+    return yN;
+}
+function ripple(ndx,time){
+    let d = Math.sqrt(ndx*ndx + ndx *ndx);
+    let yaN = Math.sin(Math.PI)*(4*d-t);
+    return yaN;
+}
+function resize(){
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize( window.innerWidth, window.innerHeight );
+    
+
+}
+
+
+
+		</script>
+
+</html>

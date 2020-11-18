@@ -34,7 +34,7 @@
 
 				scene = new THREE.Scene();
 
-				camera = new THREE.PerspectiveCamera( 45.0, window.innerWidth / window.innerHeight, 100, 1500.0 );
+				camera = new THREE.PerspectiveCamera( 45.0, window.innerWidth / window.innerHeight, 0.1, 15000.0 );
 				camera.position.z = 480.0;
 				scene.add( camera );
 
@@ -59,27 +59,27 @@
 
 			function createGeometry() {
 
-				const heartShape = new THREE.Shape(); // From http://blog.burlock.org/html5/130-paths
-				const x = 0, y = 0;
+				// const heartShape = new THREE.Shape(); // From http://blog.burlock.org/html5/130-paths
+				// const x = 0, y = 0;
 
-				heartShape.moveTo( x + 25, y + 25 );
-				heartShape.bezierCurveTo( x + 25, y + 25, x + 20, y, x, y );
-				heartShape.bezierCurveTo( x - 30, y, x - 30, y + 35, x - 30, y + 35 );
-				heartShape.bezierCurveTo( x - 30, y + 55, x - 10, y + 77, x + 25, y + 95 );
-				heartShape.bezierCurveTo( x + 60, y + 77, x + 80, y + 55, x + 80, y + 35 );
-				heartShape.bezierCurveTo( x + 80, y + 35, x + 80, y, x + 50, y );
-				heartShape.bezierCurveTo( x + 35, y, x + 25, y + 25, x + 25, y + 25 );
+				// heartShape.moveTo( x + 25, y + 25 );
+				// heartShape.bezierCurveTo( x + 25, y + 25, x + 20, y, x, y );
+				// heartShape.bezierCurveTo( x - 30, y, x - 30, y + 35, x - 30, y + 35 );
+				// heartShape.bezierCurveTo( x - 30, y + 55, x - 10, y + 77, x + 25, y + 95 );
+				// heartShape.bezierCurveTo( x + 60, y + 77, x + 80, y + 55, x + 80, y + 35 );
+				// heartShape.bezierCurveTo( x + 80, y + 35, x + 80, y, x + 50, y );
+				// heartShape.bezierCurveTo( x + 35, y, x + 25, y + 25, x + 25, y + 25 );
 
-				const extrudeSettings = {
-					depth: 16,
-					bevelEnabled: true,
-					bevelSegments: 1,
-					steps: 2,
-					bevelSize: 1,
-					bevelThickness: 1
-				};
+				// const extrudeSettings = {
+				// 	depth: 16,
+				// 	bevelEnabled: true,
+				// 	bevelSegments: 1,
+				// 	steps: 2,
+				// 	bevelSize: 1,
+				// 	bevelThickness: 1
+				// };
 
-				const geometry = new THREE.ExtrudeGeometry( heartShape, extrudeSettings );
+				const geometry = new THREE.SphereGeometry( 5);
 				geometry.rotateX( Math.PI );
 				geometry.scale( 0.4, 0.4, 0.4 );
 
@@ -92,7 +92,7 @@
 				const bufferGeometry = new THREE.BufferGeometry();
 
 				const radius = 125;
-				const count = 80;
+				const count = 800;
 
 				const positions = [];
 				const normals = [];
@@ -161,6 +161,7 @@
 
 				const mesh = new THREE.Mesh( bufferGeometry, material );
 				scene.add( mesh );
+				mesh.geometry.attributes.position.needsUpdate = true;
 
 			}
 

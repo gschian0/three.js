@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<link type="text/css" rel="stylesheet" href="main.css">
+	</head>
+	<body>
+
+        <div id="container"></div>
+        
+        <!-- <script></script> -->
+
+        <script id="vertexShader" type="x-shader/x-vertex">
+            #ifdef GL_ES
+            precision highp float;
+            #endif
+            attribute float vertexDisplacement;
+            varying vec2 vUv;
+            varying vec3 norm;
+            varying float verty;
+            
+              
+            void main()
+            {
+              vUv = uv;
+              vec3 newPosition = position + normal * vec3(vertexDisplacement);
+              gl_Position = projectionMatrix * modelViewMatrix * vec4(newPosition,1.0);
+              norm = normal;
+              verty = vertexDisplacement;
+            }  
+            </script>
+            
+            <script id="fragmentShader" type="x-shader/x-vertex"> 
+                #ifdef GL_ES
+                precision highp float;
+                #endif
+                float colormap_red(float x) {
+                    if (x < 0.0) {
+                        return 124.0 / 255.0;
+                    } else if (x <= 1.0) {
+                        return (128.0 * sin(6.25 * (x + 0.5)) + 128.0) / 255.0;
+                    } else {
+                        return 134.0 / 255.0;
+                    }
+                }
+                
+                
+                float colormap_green(float x) {
+                    if (x < 0.0) {
+                        return 121.0 / 255.0;
+                    } else if (x <= 1.0) {
+                        return (63.0 * sin(x * 99.72) + 97.0) / 255.0;
+                    } else {
+                        return 52.0 / 255.0;
+                    }
+                }
+                
+                float colormap_blue(float x) {
+                    if (x < 0.0) {
+                        return 131.0 / 255.0;
+                    } else if (x <= 1.0) {
+                        return (128.0 * sin(6.23 * x) + 128.0) / 255.0;
+                    } else {
+                        return 121.0 / 255.0;
+                    }
+                }
+                
+                vec4 colormap(float x) {
+                    return vec4(colormap_red(x), colormap_green(x), colormap_blue(x), 1.0);
+                }
+        
+        
+                varying vec2 vUv;
+                varying vec3 norm;
+                varying float verty;
+                uniform sampler2D texture;
+                uniform float u_time;
+                
+                mat2 rotate2d(float a){
+                    return mat2(
+                        cos(a), -sin(a),
+                        sin(a), cos(a)
+                    );
+                }
+                
+                
+                vec2 warp (vec2 p, float scaler) {
+                    float r = length(p);
+                    float alpha = float(scaler) * r;
+                
+                    return rotate2d(alpha) * p;
+                }
+                  
+                void main()
+                {
+
+
+                    vec3 light = vec3(0.5, 0.2, 1.0);
+
+                    // ensure it's normalized
+                    light = normalize(light);
+                  
+                    // calculate the dot product of
+                    // the light to the vertex normal
+                    float dProd = max(0.0,
+                                      dot(norm, light));
+                  // use the xy normal to look up the texture position
+                  // and convert the [-1, 1] range to [0, 1]
+                  vec2 lookup = 2.0*(norm.xy + 1.0) / 2.0 - vec2(0.5,0.5);
+                  
+                  // generate an attenuation factor to darken the back
+                  float attenuation = min(1.0, norm.z + 1.0);
+                  
+                  // flip the x component to mirror the image
+                  lookup.x = 1.0 - lookup.x;
+                  
+                  // look up and output the attenuated texture color
+                  //vec3 color = texture2D(texture, lookup).rgb;
+                  vec2 oovy = vUv;
+                  oovy.x += 0.5*sin(2.0*3.14159*oovy.y + sin(1.0*3.14159*oovy.x))-0.5;
+                  oovy += warp(1.0*oovy, sin(u_time));
+                  vec4 mapper = colormap(abs(sin(5.0*oovy.x+0.5+u_time)));
+                  //gl_FragColor = vec4(mapper.x*dProd,mapper.y*dProd,mapper.z*dProd,1.0);
+                  gl_FragColor = mapper;
+                // gl_FragColor = vec4(mapper.rgb*verty, mapper.a);
+                }
+            
+            </script>
+	
+		<script type="module">
+
+			import * as THREE from '../build/three.module.js';
+
+			import Stats from './jsm/libs/stats.module.js';
+
+			import { Curves } from './jsm/curves/CurveExtras.js';
+			import { ParametricGeometries } from './jsm/geometries/ParametricGeometries.js';
+
+            let camera, scene, renderer, stats;
+            let clock;
+            let uniforms;
+            let attributes;
+            let vertexDisplacement;
+            let boxMesh;
+            let boxGeom;
+
+			init();
+			animate();
+
+			function init() {
+
+				const container = document.getElementById( 'container' );
+
+				camera = new THREE.PerspectiveCamera( 10, window.innerWidth / window.innerHeight, 1, 10000 );
+                camera.position.y = 200;
+                camera.position.z = 1;
+
+				scene = new THREE.Scene();
+                clock = new THREE.Clock();
+				//
+
+				const ambientLight = new THREE.AmbientLight( 0xcccccc, 0.4 );
+				scene.add( ambientLight );
+
+				const pointLight = new THREE.PointLight( 0xffffff, 0.8 );
+				camera.add( pointLight );
+                scene.add( camera );
+                
+                uniforms = {
+                u_time: { value: 0.0 },
+                u_resolution: { value:{ x:0, y:0 }}
+                };
+                attributes = {
+                displacement: {
+                    type: 'f', // a float
+                    value: [] // an empty array
+                    }
+                };
+
+                boxGeom = new THREE.BoxBufferGeometry(20,20,20,20);
+                const shaderMaterial = new THREE.ShaderMaterial({
+                vertexShader: document.getElementById( 'vertexShader' ).textContent,
+                    fragmentShader: document.getElementById( 'fragmentShader' ).textContent,
+                    uniforms: uniforms,
+
+                side: THREE.DoubleSide,
+            });
+                
+                //const boxMat = new THREE.MeshPhongMaterial();
+                boxMesh = new THREE.Mesh(boxGeom,shaderMaterial);
+                scene.add(boxMesh);
+
+                const sphereGeom = new THREE.SphereBufferGeometry(15,90,200);
+                const sphereMesh = new THREE.Mesh(sphereGeom,shaderMaterial);
+                sphereMesh.position.x = -20;
+                scene.add(sphereMesh);
+                
+                boxMesh.rotation.y = -30;
+                boxMesh.rotation.x = -30;
+                
+                vertexDisplacement = new Float32Array(boxGeom.attributes.position.count);
+
+                for (var i = 0; i < vertexDisplacement.length; i ++) {
+                    vertexDisplacement[i] = Math.sin(i*2.0);
+                }
+
+                boxGeom.setAttribute('vertexDisplacement', new THREE.BufferAttribute(vertexDisplacement, 1));
+                
+                // var vertexDisplacement = new Float32Array(boxMesh.attributes.position.count);
+
+                // for (var i = 0; i < vertexDisplacement.length; i ++) {
+                //     vertexDisplacement[i] = Math.sin(i);
+                // }
+
+                // boxGeom.addAttribute('vertexDisplacement', new THREE.BufferAttribute(vertexDisplacement, 1));
+
+				renderer = new THREE.WebGLRenderer( { antialias: true } );
+				renderer.setPixelRatio( window.devicePixelRatio );
+				renderer.setSize( window.innerWidth, window.innerHeight );
+				container.appendChild( renderer.domElement );
+
+				stats = new Stats();
+				container.appendChild( stats.dom );
+
+				window.addEventListener( 'resize', onWindowResize, false );
+
+			}
+
+			function onWindowResize() {
+
+				camera.aspect = window.innerWidth / window.innerHeight;
+				camera.updateProjectionMatrix();
+
+				renderer.setSize( window.innerWidth, window.innerHeight );
+
+			}
+
+			function animate() {
+
+				requestAnimationFrame( animate );
+
+				render();
+				stats.update();
+
+			}
+
+			function render() {
+
+				const timer = Date.now() * 0.0001;
+
+                camera.lookAt( scene.position );
+                
+                scene.traverse( function ( boxMesh ) {
+
+                if ( boxMesh.isMesh === true ) {
+
+                boxMesh.rotation.x = timer * 5;
+                boxMesh.rotation.y = timer * 2.5;
+
+                }
+                } );
+                uniforms.u_time.value = clock.getElapsedTime();
+                for (var i = 0; i < vertexDisplacement.length; i ++) {
+                vertexDisplacement[i] = 0.5 + 2.0*Math.sin(i + timer*300.0) * 0.7;
+                }
+                    boxMesh.position.x = 20;
+            boxMesh.geometry.attributes.vertexDisplacement.needsUpdate = true;
+				renderer.render( scene, camera );
+
+			}
+
+		</script>
+
+	</body>
+</html>
+
+

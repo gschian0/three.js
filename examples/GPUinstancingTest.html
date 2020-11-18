@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>three.js webgl - instancing - dynamic</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<link type="text/css" rel="stylesheet" href="main.css">
+	</head>
+	<body>
+
+		<script type="module">
+
+			import * as THREE from '../build/three.module.js';
+
+			import Stats from './jsm/libs/stats.module.js';
+            import { GUI } from './jsm/libs/dat.gui.module.js';
+            import { OrbitControls } from './jsm/controls/OrbitControls.js';
+
+			let camera, scene, renderer, stats;
+
+			let mesh;
+			const amount = parseInt( window.location.search.substr( 1 ) ) || 10;
+            const count = Math.pow( amount, 3 );
+            //const count = 100;
+			const inny = new THREE.Object3D();
+
+			init();
+			animate();
+
+			function init() {
+
+				camera = new THREE.PerspectiveCamera( 100, window.innerWidth / window.innerHeight, 0.5, 100 );
+				camera.position.set( -0, -5, -15 );
+				camera.lookAt( 0, 0, 0 );
+
+                scene = new THREE.Scene();
+                
+               
+
+				//const loader = new THREE.BufferGeometryLoader();
+				//loader.load( 'models/json/suzanne_buffergeometry.json', function ( geometry ) {
+                    const geometry = new THREE.SphereBufferGeometry(1,32,32);
+					geometry.computeVertexNormals();
+					geometry.scale( 1,1, 1 );
+
+					const material = new THREE.MeshNormalMaterial();
+					// check overdraw
+					// let material = new THREE.MeshBasicMaterial( { color: 0xff0000, opacity: 0.1, transparent: true } );
+
+					mesh = new THREE.InstancedMesh( geometry, material, count );
+					mesh.instanceMatrix.setUsage( THREE.DynamicDrawUsage ); // will be updated every frame
+                    mesh.position.x = 50;
+                    scene.add( mesh );
+
+					//
+
+					const gui = new GUI();
+					gui.add( mesh, 'count', 0, count );
+
+				//} );
+
+				//
+
+				renderer = new THREE.WebGLRenderer( { antialias: true } );
+				renderer.setPixelRatio( window.devicePixelRatio );
+				renderer.setSize( window.innerWidth, window.innerHeight );
+				document.body.appendChild( renderer.domElement );
+
+                //
+                
+                var controls = new OrbitControls( camera, renderer.domElement );
+				controls.minDistance = 1;
+				controls.maxDistance = 5090;
+
+				stats = new Stats();
+				document.body.appendChild( stats.dom );
+
+				//
+
+				window.addEventListener( 'resize', onWindowResize, false );
+
+			}
+
+			function onWindowResize() {
+
+				camera.aspect = window.innerWidth / window.innerHeight;
+				camera.updateProjectionMatrix();
+
+				renderer.setSize( window.innerWidth, window.innerHeight );
+
+			}
+
+			//
+
+			function animate() {
+
+				requestAnimationFrame( animate );
+
+				render();
+
+				stats.update();
+
+			}
+
+			function render() {
+
+if ( mesh ) {
+
+	const time = Date.now() * 0.001;
+
+	mesh.rotation.x = Math.sin( time / 4 );
+	mesh.rotation.y = Math.sin( time / 2 );
+
+	let i = 0;
+	const offset = ( amount - 1 ) / 2;
+
+	for ( let x = 0; x < amount; x ++ ) {
+
+		for ( let y = 0; y < amount; y ++ ) {
+
+			//for ( let z = 0; z < amount; z ++ ) {
+				let t = Date.now()*.002;
+				mesh.position.set( offset - x, 2*Math.sin(offset-x+t) , offset-y);
+				//dummy.rotation.y = ( Math.sin( x / 4 + time ) + Math.sin( y / 4 + time ) + Math.sin( z / 4 + time ) );
+				//dummy.rotation.z = dummy.rotation.y * 2;
+
+				mesh.updateMatrix();
+
+				mesh.setMatrixAt( i ++, mesh.matrix );
+
+			}
+
+		}
+					mesh.instanceMatrix.needsUpdate = true;
+                    //inny.position.x = -100;    
+				}
+
+				renderer.render( scene, camera );
+
+			}
+
+		</script>
+
+	</body>
+</html>

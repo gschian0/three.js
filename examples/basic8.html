@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<link type="text/css" rel="stylesheet" href="main.css">
+	</head>
+	<body>
+
+		<div id="container"></div>
+		<div id="info">
+		
+        </div>
+        
+    </body>
+
+	<script type="module">
+
+import * as THREE from '../build/three.module.js';
+import { OrbitControls } from './jsm/controls/OrbitControls.js';
+            
+let scene, camera, renderer,clock;
+let controls;
+
+let xboxes = 100;
+let group = new THREE.Group();
+let newbie=[];
+let size = 0.5;
+let resolution = 100;
+group.name = 'groupy';
+
+init();
+update();
+//init
+function init(){
+  clock = new THREE.Clock();
+  scene = new THREE.Scene();
+  scene.background = new THREE.Color(0);
+  let group = new THREE.Group();
+  
+    let light = new THREE.HemisphereLight( 0xffffbb, 0x080820, 1 );
+    scene.add( light );
+    var directionalLight = new THREE.DirectionalLight( 0xffffff, 1 );
+    scene.add( directionalLight );
+
+    camera = new THREE.PerspectiveCamera( 10, window.innerWidth / window.innerHeight, 1, 10000 );
+    camera.position.y = 200;
+    camera.position.z = 1;
+    camera.position.z = 150;
+    camera.position.y = 10;
+    camera.lookat = (0,0,0);
+    renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize( window.innerWidth, window.innerHeight );
+    document.body.appendChild( renderer.domElement );
+    window.addEventListener( 'resize', resize, false);
+    controls = new OrbitControls( camera, renderer.domElement );
+    scene.add(group);
+   
+
+
+    let points = [];
+    let rad = 0;
+    // separation = 0.5;
+    for (let i = 0; i <= 20; i++) {
+        points.push(new THREE.Vector3(i,i,0));
+    
+    }
+    let testGeo = new THREE.BoxBufferGeometry(1,1,1,1);
+    let testMat = new THREE.MeshNormalMaterial();
+
+    for(let i = 0; i< points.length; i++){
+
+                newbie[i] = new THREE.Mesh(testGeo,testMat);
+                newbie[i].position.x = points[i].x;
+                newbie[i].position.y = points[i].y;
+                newbie[i].position.z = points[i].z;
+                group.add(newbie[i]);
+                scene.add(newbie[i]);
+
+    }
+    
+
+} 
+
+function f (u, v,t) {
+		// let p = new THREE.Vector3();
+		let x = u;
+		let y = Math.sin(Math.PI * (u + v + t));
+		let z = v;
+		return  new THREE.Vector3(x,y,z);
+	}
+
+//updates and resize
+function update(group){
+    let step = 2 / resolution;
+let  v = 0.5 * step - 1;
+    requestAnimationFrame( update );
+    renderer.render( scene, camera );
+    controls.update();
+    let time = clock.getElapsedTime();
+ 
+    newbie.forEach((box, ndx) => {
+        let x, y, z;
+        if (ndx == resolution) {
+				 x = 0;
+				z += 1;
+				lv = (z + 0.5) * step - 1;
+            }
+            let u = (x + 0.5) * step - 1;
+            //points[i].localPosition = f(u, v, time);
+            let form = f(u,v,time);
+            newbie[ndx].position.x = form.x;
+            newbie[ndx].position.y = form.y;
+            newbie[ndx].position.z = form.z;
+
+      //newbie[ndx].position = 4*Math.sin(ndx+time);
+    });
+  
+}
+
+function resize(){
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize( window.innerWidth, window.innerHeight );
+    
+
+}
+
+		</script>
+
+</html>

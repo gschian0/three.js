@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<link type="text/css" rel="stylesheet" href="main.css">
+	</head>
+	<body>
+
+		<div id="container"></div>
+		<div id="info">
+		
+        </div>
+        
+    </body>
+
+	<script type="module">
+
+import * as THREE from '../build/three.module.js';
+import { OrbitControls } from './jsm/controls/OrbitControls.js';
+            
+
+            
+let scene, camera, renderer,clock;
+let controls;
+let group = new THREE.Group();
+let newbie=[];
+let resolution = 100;
+let step = 2 / resolution;
+let m = [7];
+
+init();
+update();
+//init
+function init(){
+    clock = new THREE.Clock();
+    scene = new THREE.Scene();
+    scene.background = new THREE.Color(0);
+    let group = new THREE.Group();
+    group.name = 'groupy';
+  
+    let light = new THREE.HemisphereLight( 0xffffbb, 0x080820, 1 );
+    scene.add( light );
+    var directionalLight = new THREE.DirectionalLight( 0xffffff, 1 );
+    scene.add( directionalLight );
+
+    camera = new THREE.PerspectiveCamera( 10, window.innerWidth / window.innerHeight, 1, 10000 );
+    camera.position.y = 200;
+    camera.position.z = 1;
+    camera.position.y = 10;
+    camera.lookat = (0,0,0);
+    renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize( window.innerWidth, window.innerHeight );
+    document.body.appendChild( renderer.domElement );
+    window.addEventListener( 'resize', resize, false);
+    controls = new OrbitControls( camera, renderer.domElement );
+    
+    scene.add(group);
+
+    let scale = step * 1;
+    let testGeo = new THREE.BoxBufferGeometry(1,1,1,1);
+    let testMat = new THREE.MeshNormalMaterial();
+
+    for(let i = 0; i< resolution*resolution; i++){
+    
+                newbie[i] = new THREE.Mesh(testGeo,testMat);
+
+                newbie[i].scale.x = scale;
+                newbie[i].scale.y = scale;
+                newbie[i].scale.z = scale;
+                group.add(newbie[i]);
+    
+    }
+    
+    var center = new THREE.Vector3();
+    var bbox = new THREE.Box3().setFromObject(group).getCenter(center);
+    group.translateX(-center.x);
+    
+
+} 
+
+function Wave(u,v, time){
+    let p = new THREE.Vector3();
+    p.x = u;
+    p.y = Math.sin(Math.PI*  (u + v + time));
+    p.z = v;
+    return p;
+}
+
+function Ripple (u,v,time){
+    let d = Math.sqrt(u*u + v*v);
+    let p = new THREE.Vector3();
+    p.x = u;
+    p.y = Math.sin(Math.PI * (4 * d -time));
+    //p.y += 0.2*Math.cos(15*Math.PI * (4 * d -time));
+    p.y /= 1 + 10 * d;
+    p.z = v;
+    return p;
+}
+
+function multiWave(u,v, time){
+    let p = new THREE.Vector3();
+    p.x = u;
+    p.y = Math.sin(Math.PI*  (u + v + time));
+    p.y += 0.5 * Math.sin(2*Math.PI * 2 * (v + time));
+    p.y += Math.sin(Math.PI*(u + v + 0.25 * time));
+    p.y *= 1/2.5;
+    p.z = v;
+    return p;
+}
+
+function Cylinder(u, v, time){
+    let p = new THREE.Vector3();
+    p.x = Math.sin(Math.PI * u);
+    p.y = v;
+    p.z = Math.cos(Math.PI * u);
+    return p;
+}
+
+function colCylinder(u, v, time){
+    let r = Math.cos(0.5 * Math.PI * v);
+    let p = new THREE.Vector3();
+    p.x = r * Math.sin(Math.PI * u);
+    p.y = v;
+    p.z = r * Math.cos(Math.PI * u);
+    return p;
+}
+
+function colCylinderA(u, v, time){
+    let r = Math.cos(0.5 * Math.PI * v+ time);
+    let p = new THREE.Vector3();
+    p.x = r * Math.sin(Math.PI * u+ time);
+    p.y = v;
+    p.z = r * Math.cos(Math.PI * u);
+    return p;
+}
+
+function K3(u,v,time){
+    let r = 1;
+    let p = new THREE.Vector3();
+    p.x = -2* r *Math.cos(u) + 2 * Math.cos(u) / r - 2* r*3* Math.cos(3* u) / 3;
+    p.y = 6* r * Math.sin(u) - 2 * Math.sin(u) / r - 2* r*3 * Math.sin(3 *u) / 3;
+    p.z = 4* Math.log(r);
+    return p;
+}
+
+function Sphere(u, v, time){
+    let r = Math.cos(0.5 * Math.PI * v);
+    let p = new THREE.Vector3();
+    p.x = r * Math.sin(Math.PI * u);
+    p.y = Math.sin(Math.PI * 0.5*v);
+    p.z = r * Math.cos(Math.PI * u);
+    return p;
+}
+
+function twistedSphere(u, v, time){
+    //let r = 0.5 + 0.5 * Math.sin(Math.PI * time);
+    //let r = 1;
+    //let r = 0.9 + 0.1 * Math.sin(16 *Math.PI *u+time);
+    //let r = 0.9 + 0.1 * Math.sin(16 * Math.PI * v+time);
+    let r = 0.9 + 0.1* Math.sin(Math.PI * (6*u + 4 * v + time));
+
+    let s = r * Math.cos(0.5*Math.PI *v);
+    let p = new THREE.Vector3();
+    p.x = s * Math.sin(Math.PI * u);
+    p.y = r* Math.sin(Math.PI * 0.5*v);
+    p.z = s * Math.cos(Math.PI * u);
+    return p;
+}
+
+
+// r += pow(sin(m[0]*phi),(double)m[1]);
+//    r += pow(cos(m[2]*phi),(double)m[3]);
+//    r += pow(sin(m[4]*theta),(double)m[5]);
+//    r += pow(cos(m[6]*theta),(double)m[7]);
+
+// p.x = r * sin(phi) * cos(theta);
+//    p.y = r * cos(phi);
+//    p.z = r * sin(phi) * sin(theta);
+
+function Spherical(u, v, time){
+    let r = 0;
+    let p = new THREE.Vector3();
+    m = [6,0,8,7,6,7,0,1];
+    r += Math.pow(Math.sin(m[0]*u+time),m[1]);
+    r += Math.pow(Math.cos(m[2]*u+time),m[3]);
+    r += Math.pow(Math.sin(m[4]*v+time),m[5]);
+    r += Math.pow(Math.cos(m[6]*v+time),m[7]);
+    p.x = r * Math.sin(Math.PI * v) * Math.cos(Math.PI *u);
+    p.y = r * Math.cos(Math.PI *v);
+    p.z = r * Math.cos(Math.PI * v)* Math.sin(u);
+    return p;
+}
+
+
+// x = cos(u) (a + sin(v) cos(u/2) - sin(2v) sin(u/2)/2)
+//    y = sin(u) (a + sin(v) cos(u/2) - sin(2v) sin(u/2)/2)
+//    z = sin(u/2) sin(v) + cos(u/2) sin(2v)/2
+// where
+//    -π <= u <= π
+ 
+// and
+//    -π <= v <= π
+
+function Figure8Klein(u,v,time){
+    //let r1 = 1;
+    //let r2 = 0.5;
+    //let s = r1 + r2 * Math.cos(Math.PI * v);
+    let a = 1;
+    let p = new THREE.Vector3;
+    p.x = Math.cos(a) *(2*a + Math.sin(v)* Math.cos(u/2) - Math.sin(2*v*Math.PI)* Math.sin(u/2*Math.PI)/2);
+    p.y = Math.sin(u+time) *(a + Math.sin(v*Math.PI * 2) * Math.cos(u/2) - Math.sin(2*v)* Math.sin(u/2)/2);
+    p.z =  Math.sin(u/2)*Math.sin(v+time) + Math.cos(Math.PI * 2*u/2+time)* Math.sin(2*v)/2;
+    return p;
+}
+
+function Torus(u,v,time){
+    let r1 = 1;
+    let r2 = 0.5;
+    let s = r1 + r2 * Math.cos(Math.PI * v);
+    let p = new THREE.Vector3;
+    p.x = s * Math.sin(Math.PI * u);
+    p.y = r2 * Math.sin(Math.PI * v);
+    p.z = s * Math.cos(Math.PI * u);
+    return p;
+}
+
+function twistedTorus(u,v,time){
+    let r1 = 0.7 + 0.1 * Math.sin(Math.PI * (5*u + 0.5 * time));
+    let r2 = 0.15 + 0.05 * Math.sin(Math.PI * (8 * u + 4 * v + 2 * time));
+    let s = r1 + r2 * Math.cos(Math.PI * v);
+    let p = new THREE.Vector3;
+    p.x = s * Math.sin(Math.PI * u);
+    p.y = r2 * Math.sin(Math.PI * v);
+    p.z = s * Math.cos(Math.PI * u);
+    return p;
+}
+
+function Circle(u, v, time){
+    let p = new THREE.Vector3();
+    p.x = Math.sin(Math.PI * u);
+    p.y = 0;
+    p.z = Math.cos(Math.PI * u);
+    return p;
+}
+
+function update(group){
+    requestAnimationFrame( update );
+    renderer.render( scene, camera );
+    controls.update();
+    let time = clock.getElapsedTime();
+    let v = 0.5 * step -1;
+    for ( let i = 0, x = 0, z = 0; i < newbie.length; i++, x++){
+        if(x === resolution) {
+            x = 0;
+            z += 1;
+            v = (z + 0.5) * step - 1;
+        }
+        let u = (x + 0.5) * step - 1;
+      // let scaled_u = scaleValue(u,[0,newbie.length],[0,2 * Math.PI]);
+      // let scaled_v = scaleValue(v,[0,newbie.length],[-2*Math.PI,2*Math.PI]);
+       newbie[i].position.copy(multiWave(u,v,time));
+    }
+
+    
+}
+function scaleValue(value,from,to){
+    var scale = (to[1]-to[0]) / (from[1]-from[0]);
+    var capped = Math.min(from[1],Math.max(from[0],value))-from[0];
+    return ~~(capped * scale + to[0]);
+}
+
+
+function resize(){
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize( window.innerWidth, window.innerHeight );
+    
+}
+		</script>
+
+</html>

@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<link type="text/css" rel="stylesheet" href="main.css">
+	</head>
+	<body>
+
+		<div id="container"></div>
+		<div id="info">
+		
+        </div>
+        
+    </body>
+
+	<script type="module">
+
+import * as THREE from '../build/three.module.js';
+import { OrbitControls } from './jsm/controls/OrbitControls.js';
+            
+let scene, camera, renderer,clock;
+let controls;
+//let box=[];
+let xboxes = 10;
+let group = new THREE.Group();
+let newbie=[];
+let size = 1;
+let separation = 1;
+group.name = 'groupy';
+// classes
+// class createBox extends THREE.Group{
+        
+//         constructor(size,x,y,z){
+//             super();
+            
+//             // box.push(boxMesh);
+
+//     }
+// }
+
+
+
+init();
+
+
+
+function init(){
+  clock = new THREE.Clock();
+  scene = new THREE.Scene();
+  scene.background = new THREE.Color(0);
+  
+    let light = new THREE.HemisphereLight( 0xffffbb, 0x080820, 1 );
+    scene.add( light );
+    var directionalLight = new THREE.DirectionalLight( 0xffffff, 1 );
+    scene.add( directionalLight );
+  
+    camera = new THREE.PerspectiveCamera( 10, window.innerWidth / window.innerHeight, 1, 10000 );
+    camera.position.y = 200;
+    camera.position.z = 1;
+    camera.position.z = 150;
+    camera.position.y = 10;
+    camera.lookat = (0,0,0);
+    //camera.up.set( 0, 0, 1 );
+    renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize( window.innerWidth, window.innerHeight );
+    document.body.appendChild( renderer.domElement );
+    window.addEventListener( 'resize', resize, false);
+    controls = new OrbitControls( camera, renderer.domElement );
+    scene.add(group);
+    group.position.x = -xboxes/2;
+    group.position.y = -xboxes/2;
+    group.position.z = -xboxes/2;
+    // do stuff
+    
+    
+    let boxGeom = new THREE.BoxGeometry(size,size,size,size);
+    let boxMat = new THREE.MeshNormalMaterial({side: THREE.DoubleSide})
+    let indy = 0;
+    for (let i = 0;i < xboxes; i+=separation){
+        for (let j = 0;j < xboxes; j+=separation){
+            for (let k = 0;k < xboxes; k+=separation){  
+
+            newbie[i] = new THREE.Mesh(boxGeom,boxMat);
+            newbie[i].position.x = i*Math.sin(indy)
+            newbie[i].position.y = j;
+            newbie[i].position.z = k*Math.cos(indy);
+            scene.add(newbie[i])
+            let index = i+j+k;
+            newbie[i].name = `box${index}`;
+            console.log(newbie[i].name);
+            indy ++;
+            
+            
+            
+            
+             newbie.push(newbie[i]);
+            console.log(newbie[i])
+            group.add(newbie[i]);
+        }
+    }
+}
+
+
+ 
+    
+    
+    
+    
+    
+    // update stuff
+    update();
+
+} 
+
+    // end shapes
+
+				
+				
+
+  
+  
+
+//updates and resize
+function update(group){
+    requestAnimationFrame( update );
+    renderer.render( scene, camera );
+    controls.update();
+    let time = clock.getDelta();
+    //  let one = scene.getObjectByName('box-3')
+    //  one.rotation.x += 0.1;
+
+    // newbie.forEach((box, ndx) => {
+    //   const speed =  ndx * .01;
+    //   let mult = -ndx/2 ;
+    //   mult += 1;
+    //   const rot = time * Math.abs(mult);
+    //   newbie[1].rotation.y += rot*.01;
+    //   //box.position.y += 0.5*Math.sin(time*mult*ndx);
+    // });
+        let x = 0;
+        let angle = 0;
+    for (let i = -newbie.length/2; i < newbie.length/2; i ++)
+    {
+        let d = Math.hypot(-i+.02, i+.02, 0, 0)*.002;
+        newbie[x].rotation.y += d*.06;
+        //newbie[x].position.x = 12.0*Math.sin(time*.5 + i*.2);
+        x++;
+       // angle += 0.01;
+    }
+    
+    
+    // console.log(time);
+    // let groupy = scene.getObjectByName('groupy')
+    // groupy.rotation.y += 0.09;
+
+   
+    
+    
+}
+
+function resize(){
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize( window.innerWidth, window.innerHeight );
+    
+
+}
+
+		</script>
+
+</html>

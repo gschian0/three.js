@@ -34,7 +34,9 @@
       "@typescript-eslint"
     ],
     "rules": {
-      "@typescript-eslint/no-unused-vars": ["error"],
+      "@typescript-eslint/no-unused-vars": [
+        "error"
+      ],
       "@typescript-eslint/indent": [
         "error",
         "tab",
@@ -113,5 +115,11 @@
       "build/three.module.js"
     ],
     "directories": {}
+  },
+  "dependencies": {
+    "ar.js-modular": "^1.0.1",
+    "artoolkit5-js": "0.0.4",
+    "jsartoolkit": "0.0.0",
+    "jsartoolkit5": "0.0.4"
   }
 }

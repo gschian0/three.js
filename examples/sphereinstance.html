@@ -50,9 +50,9 @@
 
 					for ( let i = 0; i < count; i ++ ) {
 
-						instanceColors.push( Math.sin(i) );
-						instanceColors.push( Math.random(i) );
-						instanceColors.push( Math.sin(i) );
+						instanceColors.push( Math.random() );
+						instanceColors.push( Math.random() );
+						instanceColors.push( Math.random() );
 
 					}
 
@@ -149,6 +149,17 @@
 				stats.update();
 
 			}
+			
+			function sphere(u,v,t){
+			let r = 0.5 +0.5 * Math.sin(Math.PI * t);
+			let s = r * Math.cos(0.5 * Math.PI + v);
+            let p = new THREE.Vector3( 0, 0, 0 );	
+            let x = s * Math.sin(Math.PI * u);
+            let y = r * Math.sin(0.5 * PI * v);
+            let z = s * (Math.cos(MATH.PI * u))
+            p.set = (x, y, z);
+            return p;
+			}
 
 			function render() {
 
@@ -156,8 +167,8 @@
 
 					const time = Date.now() * 0.001;
 
-					mesh.rotation.x = Math.sin( time / 4 );
-					mesh.rotation.y = Math.sin( time / 2 );
+					//mesh.rotation.x = Math.sin( time / 4 );
+					//mesh.rotation.y = Math.sin( time / 2 );
 
 					let i = 0;
 					const offset = ( amount - 1 ) / 2;
@@ -166,9 +177,9 @@
 
 						for ( let y = 0; y < amount; y ++ ) {
 
-							//for ( let z = 0; z < amount; z ++ ) {
-								let t = Date.now()*.002;
-								dummy.position.set( offset - x, 2*Math.sin(offset-x+t) , offset-y);
+							for ( let z = 0; z < amount; z ++ ) {
+
+								dummy.positionx.set( offset - x, offset - y, offset - z );
 								//dummy.rotation.y = ( Math.sin( x / 4 + time ) + Math.sin( y / 4 + time ) + Math.sin( z / 4 + time ) );
 								//dummy.rotation.z = dummy.rotation.y * 2;
 
@@ -180,7 +191,7 @@
 
 						}
 
-					//}
+					}
 
 					mesh.instanceMatrix.needsUpdate = true;
 

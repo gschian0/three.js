@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<style>
+			body {
+				color: #ffffff;
+				font-family:Monospace;
+				font-size:13px;
+				text-align:center;
+				font-weight: bold;
+
+				background-color: #000000;
+				margin: 0px;
+				overflow: hidden;
+			}
+			#info {
+				color: #fff;
+				position: absolute;
+				top: 0px; width: 100%;
+				padding: 5px;
+				z-index:100;
+			}
+
+		</style>
+	</head>
+
+	<body>
+
+		<div id="container"></div>
+
+		<script src="../build/three.js"></script>
+
+		<script src="js/Detector.js"></script>
+		<script src="js/libs/stats.min.js"></script>
+        <script src="http://threejs.org/build/three.min.js"></script>
+        <script src="http://threejs.org/examples/js/controls/OrbitControls.js"></script>
+        <script>
+var scene, camera, renderer, matShader;
+
+scene = new THREE.Scene();
+const envmap = new THREE.CubeTextureLoader()
+  .setPath( '/img/' )
+  .load( [
+    'power2.jpg',
+    'power2.jpg',
+    'power2.jpg',
+    'power2.jpg',
+    'power2.jpg',
+    'power2.jpg'
+  ] );
+scene.background = envmap;
+
+camera = new THREE.PerspectiveCamera( 60, window.innerWidth/window.innerHeight, 0.1, 10000 );
+camera.position.set(0, 1, 1000);
+
+const light = new THREE.DirectionalLight();
+light.position.set(0,1,0);
+scene.add(light);
+
+renderer = new THREE.WebGLRenderer({ antialias: false });
+renderer.setSize( window.innerWidth, window.innerHeight );
+document.body.appendChild( renderer.domElement );
+
+const geometry = new THREE.SphereBufferGeometry( 500, 300, 500, 500 );
+const material = new THREE.MeshStandardMaterial({ 
+  color: 0x00aaff, 
+  envMap: envmap, 
+  metalness: 1.0, 
+  roughness: 0.1,
+  side: THREE.DoubleSide,
+});
+material.onBeforeCompile = (shader) => {
+    shader.uniforms.time = { value: 0}
+    shader.vertexShader = `
+        uniform float time;
+    ` + shader.vertexShader
+
+    const token = '#include <begin_vertex>'
+    const customTransform = `
+        vec3 transformed = vec3(position);
+        float freq = length(transformed.xy);
+       //float freq = sin(transformed.y);
+        float amp = 0.2;
+        float angle = -time*1.0 + freq*0.5;
+        transformed += sin(angle+time)/amp;
+
+        objectNormal *= normalize(vec3(0.0, amp * freq * cos(angle), 1.0));
+        vNormal = normalMatrix * objectNormal;
+    `
+    shader.vertexShader = shader.vertexShader.replace(token,customTransform)
+    matShader = shader
+}
+const mesh = new THREE.Mesh( geometry, material );
+//mesh.rotateX( -Math.PI/9.5 );
+//mesh.position.y = 0.0;
+scene.add(mesh);
+
+const clock = new THREE.Clock();
+
+camera.position.y = 10;
+
+const controls = new THREE.OrbitControls(camera, renderer.domElement);
+
+onWindowResize();
+window.addEventListener( 'resize', onWindowResize );
+
+update();
+
+function onWindowResize( event ) {
+  camera.aspect = window.innerWidth/window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize( window.innerWidth, window.innerHeight );
+}
+
+function update() {
+  requestAnimationFrame( update );
+  const time = clock.getElapsedTime();
+  if(matShader) matShader.uniforms.time.value = time;
+  renderer.render( scene, camera );
+}	
+</script>
+
+</body>
+
+</html>

@@ -79,7 +79,7 @@
 				scene.add( mesh );
 
 				params	= {
-					colorMap: 'rainbow',
+					colorMap: 'chunky',
 				};
 				loadModel( );
 
@@ -99,7 +99,7 @@
 
 				const gui = new GUI();
 
-				gui.add( params, 'colorMap', [ 'rainbow', 'cooltowarm', 'blackbody', 'grayscale' ] ).onChange( function () {
+				gui.add( params, 'colorMap', [ 'chunky','rainbow', 'cooltowarm', 'blackbody', 'grayscale' ] ).onChange( function () {
 
 					updateColors();
 					render();

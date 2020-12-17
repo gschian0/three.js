@@ -180,7 +180,9 @@ var ColorMapKeywords = {
 	"rainbow": [[ 0.0, 0x0000FF ], [ 0.2, 0x00FFFF ], [ 0.5, 0x00FF00 ], [ 0.8, 0xFFFF00 ], [ 1.0, 0xFF0000 ]],
 	"cooltowarm": [[ 0.0, 0x3C4EC2 ], [ 0.2, 0x9BBCFF ], [ 0.5, 0xDCDCDC ], [ 0.8, 0xF6A385 ], [ 1.0, 0xB40426 ]],
 	"blackbody": [[ 0.0, 0x000000 ], [ 0.2, 0x780000 ], [ 0.5, 0xE63200 ], [ 0.8, 0xFFFF00 ], [ 1.0, 0xFFFFFF ]],
-	"grayscale": [[ 0.0, 0x000000 ], [ 0.2, 0x404040 ], [ 0.5, 0x7F7F80 ], [ 0.8, 0xBFBFBF ], [ 1.0, 0xFFFFFF ]]
+	"grayscale": [[ 0.0, 0x000000 ], [ 0.2, 0x404040 ], [ 0.5, 0x7F7F80 ], [ 0.8, 0xBFBFBF ], [ 1.0, 0xFFFFFF ]],
+	"chunky": [[ 0.0, 0xdc0029 ], [ 0.1, 0xc17b5b ], [ 0.5, 0xaeb174 ], [ 0.7, 0xb5db69 ], [ 0.9, 0xe2ff00 ],[ 0.9, 0xd7c7df ],[ 0.9, 0xe2ff00 ]]
+	// #dc0029,#c17b5b,#aeb174,#b5db69,#e2ff00,#d7c7df,#bd8fbc,#aa5582,#93003a
 
 };
 

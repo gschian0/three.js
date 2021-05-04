@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html>
+<<<<<<< HEAD
 	<head>
 		<meta
 			name="viewport"
@@ -72,6 +73,78 @@
 						u_time: { value: 2.0 },
 					},
 					vertexShader: `
+=======
+  <head>
+    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+    <title>Post-processing with AR.js and Three.js</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r110/three.min.js"></script>
+    <script src="/examples/js/postprocessing/EffectComposer2.js"></script>
+    <script src="https://unpkg.com/three@0.110.0/examples/js/postprocessing/ShaderPass.js"></script>
+    <script src="https://unpkg.com/three@0.110.0/examples/js/postprocessing/RenderPass.js"></script>
+    <script src="https://unpkg.com/three@0.110.0/examples/js/postprocessing/GlitchPass.js"></script>
+    <script src="https://unpkg.com/three@0.110.0/examples/js/postprocessing/HalftonePass.js"></script>
+    <script src="https://unpkg.com/three@0.110.0/examples/js/shaders/CopyShader.js"></script>
+    <script src="https://unpkg.com/three@0.110.0/examples/js/shaders/DigitalGlitch.js"></script>
+    <script src="https://unpkg.com/three@0.110.0/examples/js/shaders/HalftoneShader.js"></script>
+    <script src="https://raw.githack.com/AR-js-org/AR.js/3.1.0/three.js/build/ar.js"></script>
+    <script src = "/examples/js/shaders/CopyShader3.js"></script>
+    <script src = " /examples/js/shaders/AfterimageShader.js"></script>
+    <script src = "/examples/js/postprocessing/AfterimagePass.js"></script>
+  </head>
+  <body style='margin: 0px; overflow: hidden;'>
+    <script>
+        let uniforms;
+        let cameraPlane;
+        let matty;
+        let planeGeo;
+        let bambo;
+        let spasser;
+        let spasser2;
+        let scramble;
+      const renderer = new THREE.WebGLRenderer({
+        antialias: true,
+        alpha: true
+      });
+      renderer.setClearColor(new THREE.Color(), 0);
+      renderer.setSize(640, 480);
+      renderer.domElement.style.position = 'absolute';
+      renderer.domElement.style.top = '0px';
+      renderer.domElement.style.left = '0px';
+      document.body.appendChild(renderer.domElement);
+      
+      const scene = new THREE.Scene();
+      const camera = new THREE.Camera();
+      scene.add(camera);
+
+      const arToolkitSource = new THREEx.ArToolkitSource({
+        sourceType: 'webcam'
+      });
+
+      
+      arToolkitSource.init(() => {
+        setTimeout(() => {
+          onResize();
+        }, 100);
+
+        const video = document.querySelector('video');
+        const videoTexture = new THREE.VideoTexture(video);
+        videoTexture.minFilter = THREE.LinearFilter;
+        videoTexture.magFilter = THREE.LinearFilter;
+        videoTexture.format = THREE.RGBFormat;
+        //videoTexture.wrapS = videoTexture.wrapT = THREE.RepeatWrapping;
+        videoTexture.repeat.set(10, 8);
+        
+        planeGeo = new THREE.PlaneBufferGeometry(2, 2);
+        matty = new THREE.ShaderMaterial({
+            uniforms: {
+              //tDifuse: {value : 0},
+              videoTexture: {value: videoTexture},
+              videoScale: {value: 1.0},
+             // map: THREE.UVMapping,
+              u_time: { value: 2.0 }
+            },
+            vertexShader: `
+>>>>>>> a421eee0adf84f043c57d319c1f01e7f7c121082
               precision highp float;
 
               //attribute vec3 position;

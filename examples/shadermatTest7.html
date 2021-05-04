@@ -159,7 +159,7 @@
       const uniforms2 = THREE.UniformsUtils.clone( scramble.uniforms );
       
       spasser = new THREE.ShaderPass( scramble );
-      spasser.uniforms.buster.value = 0;
+      spasser.uniforms.buster.value = 2.;
       
       composer.addPass(spasser);
 
